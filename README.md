@@ -196,7 +196,7 @@ Dashboard features include:
 - Country selection filters.
 - A preview of the analyzed transaction data.
 
-**[Open the Live Dashboard](PASTE_YOUR_STREAMLIT_DASHBOARD_URL_HERE)**
+**[Open the Live Dashboard](https://arjun-retail-sales-dashboard.streamlit.app/)**
 
 ## 🧠 What I Learned
 
