@@ -1,7 +1,10 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import io
+import zipfile
+import urllib.request
+
 
 # -------------------------------
 # 1. Page configuration
@@ -18,18 +21,53 @@ st.caption("Online Retail Dataset | December 2010 – December 2011")
 # -------------------------------
 # 2. Load the exported dataset
 # -------------------------------
+
+
 @st.cache_data
 def load_data():
-    data = pd.read_csv("retail_sales_cleaned.csv")
+    url = "https://archive.ics.uci.edu/static/public/352/online+retail.zip"
 
+    # Download the ZIP file
+    with urllib.request.urlopen(url) as response:
+        zip_bytes = response.read()
+
+    # Open the ZIP archive in memory
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
+        excel_name = next(
+            name for name in archive.namelist()
+            if name.lower().endswith(".xlsx")
+        )
+
+        with archive.open(excel_name) as excel_file:
+            data = pd.read_excel(excel_file, engine="openpyxl")
+
+    # Remove exact duplicate records
+    data = data.drop_duplicates()
+
+    # Fill missing product descriptions
+    data["Description"] = data["Description"].fillna("Unknown")
+
+    # Exclude cancelled invoices
+    cancelled = data["InvoiceNo"].astype(str).str.startswith("C")
+
+    # Keep positive-sales records
+    data = data[
+        (~cancelled) &
+        (data["Quantity"] > 0) &
+        (data["UnitPrice"] > 0)
+    ].copy()
+
+    # Prepare dates and revenue
     data["InvoiceDate"] = pd.to_datetime(
-    data["InvoiceDate"],
-    dayfirst=True
-)
+        data["InvoiceDate"],
+        dayfirst=True
+    )
+
     data["Revenue"] = data["Quantity"] * data["UnitPrice"]
     data["Month"] = data["InvoiceDate"].dt.to_period("M").astype(str)
 
     return data
+
 
 
 df = load_data()
